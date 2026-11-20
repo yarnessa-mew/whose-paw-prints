@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Whose Paw Prints?</title>
+<style>
+  :root{
+    --bg:#FFF4E2; --card:#FFFFFF; --ink:#4A3426; --soft:#8A6E5A;
+    --accent:#F08A3C; --accent-dark:#C8641C; --good:#2FA866;
+    --p1:#F27C6B; --p2:#3DB5A6; --p3:#E9B52F; --p4:#9C7BE0;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:ui-rounded,"SF Pro Rounded","Nunito","Trebuchet MS",system-ui,sans-serif;
+    touch-action:manipulation;overscroll-behavior:none}
+  body{display:flex;justify-content:center}
+  #app{width:100%;max-width:520px;min-height:100vh;min-height:100dvh;position:relative;overflow:hidden}
+  .screen{display:none;flex-direction:column;align-items:center;min-height:100vh;min-height:100dvh;padding:14px 14px 18px}
+  .screen.active{display:flex}
+  button{font:inherit;color:inherit;cursor:pointer;border:none;background:none;padding:0}
+  .big-btn{min-height:64px;min-width:200px;padding:0 34px;border-radius:999px;background:var(--accent);
+    color:#fff;font-size:26px;font-weight:800;box-shadow:0 6px 0 var(--accent-dark);letter-spacing:.5px}
+  .big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--accent-dark)}
+  .small-btn{min-height:48px;padding:0 22px;border-radius:999px;background:#fff;border:3px solid #EBD3BC;
+    font-size:18px;font-weight:700;color:var(--soft)}
+
+  /* start */
+  #start{justify-content:center;gap:14px;text-align:center}
+  #start h1{font-size:clamp(34px,10vw,48px);margin:0;line-height:1.05;color:var(--accent-dark)}
+  .rules{font-size:19px;line-height:1.35;margin:0 8px;max-width:400px}
+  .hero{width:min(300px,78vw)}
+  .label{font-size:18px;font-weight:700;color:var(--soft);margin-top:6px}
+  .pcount{display:flex;gap:12px;justify-content:center}
+  .pcount button{width:62px;height:62px;border-radius:50%;background:#fff;border:4px solid #EBD3BC;
+    font-size:28px;font-weight:800;color:var(--soft)}
+  .pcount button.on{border-color:var(--accent);background:#FFE4CC;color:var(--accent-dark);transform:scale(1.08)}
+
+  /* pass */
+  #pass{justify-content:center;gap:22px;text-align:center}
+  .pass-num{width:150px;height:150px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:84px;font-weight:900;box-shadow:0 8px 0 rgba(0,0,0,.12);animation:pop .5s ease}
+  #pass h2{font-size:32px;margin:0}
+
+  /* play */
+  #play{padding-top:10px;gap:8px}
+  .bar{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  #scores{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{display:flex;align-items:center;gap:5px;padding:5px 10px 5px 5px;border-radius:999px;background:#fff;
+    border:3px solid transparent;font-weight:800;font-size:18px;transition:transform .2s}
+  .chip .dot{width:28px;height:28px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .chip.now{transform:scale(1.08)}
+  .chip.bump{animation:pop .5s ease}
+  .chip svg{width:20px;height:20px}
+  .icon-btn{width:52px;height:52px;border-radius:50%;background:#fff;border:3px solid #EBD3BC;display:flex;align-items:center;justify-content:center;flex:none}
+  .icon-btn svg{width:28px;height:28px}
+  .progress{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;min-height:12px}
+  .progress i{width:11px;height:11px;border-radius:50%;background:#EBD3BC;display:block}
+  .progress i.done{background:var(--accent)}
+  .progress i.cur{background:#fff;border:3px solid var(--accent)}
+  .prompt{display:flex;align-items:center;gap:10px;width:100%;background:#fff;border-radius:20px;padding:8px 12px 8px 8px}
+  .prompt p{margin:0;font-size:19px;font-weight:700;line-height:1.25}
+  .floor{width:100%}
+  .floor svg{width:100%;height:auto;display:block}
+  .print{opacity:0;animation:fadein .35s ease forwards}
+  .cats{width:100%;display:flex;gap:8px;align-items:center;justify-content:center;flex:1;min-height:150px;max-height:260px}
+  .cat{flex:1;max-width:160px;min-height:140px;position:relative;border-radius:22px;background:#FFFDF8;
+    border:3px solid #F0DEC9;display:flex;align-items:flex-end;justify-content:center;padding:6px 2px 4px;transition:opacity .3s}
+  .cat svg{width:100%;height:auto;display:block}
+  .cat:active{transform:scale(.97)}
+  .cat.nope{animation:shake .5s ease;opacity:.45}
+  .cat.yes{border-color:var(--good);background:#E9F8EF;animation:hop .7s ease 2}
+  .bubble{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#fff;border:3px solid #EBD3BC;
+    border-radius:14px;padding:3px 10px;font-weight:800;font-size:16px;white-space:nowrap;animation:pop .3s ease}
+  .msg{min-height:50px;margin:2px 0 0;font-size:21px;font-weight:800;text-align:center;line-height:1.2}
+  .msg.good{color:var(--good)}
+  .msg.try{color:var(--accent-dark)}
+  .heart{position:absolute;width:26px;height:26px;pointer-events:none;animation:floatup 1.4s ease-out forwards}
+
+  /* end */
+  #end{justify-content:center;gap:16px;text-align:center}
+  #end h2{font-size:34px;margin:0;color:var(--accent-dark)}
+  #winner{font-size:24px;font-weight:800;margin:0}
+  #results{display:flex;flex-direction:column;gap:10px;width:100%;max-width:380px}
+  .row{display:flex;align-items:center;gap:10px;background:#fff;border-radius:18px;padding:10px 12px}
+  .row .dot{width:40px;height:40px;border-radius:50%;color:#fff;font-weight:900;font-size:22px;display:flex;align-items:center;justify-content:center;flex:none}
+  .row .name{font-weight:800;font-size:18px;min-width:78px;text-align:left}
+  .row .stars{display:flex;gap:2px;flex-wrap:wrap;flex:1}
+  .row .stars svg{width:26px;height:26px}
+  .row.win{outline:4px solid var(--p3)}
+  .end-btns{display:flex;flex-direction:column;gap:12px;align-items:center}
+
+  @keyframes fadein{to{opacity:1}}
+  @keyframes pop{0%{transform:scale(.6)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  @keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-16px) rotate(-3deg)}60%{transform:translateY(-16px) rotate(3deg)}}
+  @keyframes floatup{0%{opacity:0;transform:translateY(0) scale(.5)}15%{opacity:1}100%{opacity:0;transform:translateY(-130px) scale(1.2)}}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+  @media (max-height:640px){.cat{min-height:118px}.prompt p{font-size:17px}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="start" class="screen active">
+    <div class="hero" id="hero"></div>
+    <h1>Whose Paw Prints?</h1>
+    <p class="rules">The kitties walked through paint! Look at the color and size of the prints, then tap the cat who made them.</p>
+    <div class="label">How many players?</div>
+    <div class="pcount" id="pcount">
+      <button data-n="1" class="on" aria-label="1 player">1</button>
+      <button data-n="2" aria-label="2 players">2</button>
+      <button data-n="3" aria-label="3 players">3</button>
+      <button data-n="4" aria-label="4 players">4</button>
+    </div>
+    <button class="big-btn" id="startBtn" style="margin-top:8px">Start</button>
+  </section>
+
+  <section id="pass" class="screen">
+    <div class="pass-num" id="passNum">1</div>
+    <h2 id="passText">Player 1's turn!</h2>
+    <button class="big-btn" id="readyBtn">I'm ready!</button>
+  </section>
+
+  <section id="play" class="screen">
+    <header class="bar">
+      <div id="scores"></div>
+      <button class="icon-btn" id="soundBtn" aria-label="Sound on or off"></button>
+    </header>
+    <div class="progress" id="progress"></div>
+    <div class="prompt">
+      <button class="icon-btn" id="sayBtn" aria-label="Say it again"></button>
+      <p id="promptText"></p>
+    </div>
+    <div class="floor" id="floor"></div>
+    <div class="cats" id="cats"></div>
+    <p class="msg" id="msg"></p>
+  </section>
+
+  <section id="end" class="screen">
+    <h2>Great detective work!</h2>
+    <p id="winner"></p>
+    <div id="results"></div>
+    <div class="end-btns">
+      <button class="big-btn" id="againBtn">Play again</button>
+      <button class="small-btn" id="homeBtn">Change players</button>
+    </div>
+  </section>
+
+</div>
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+
+/* ---------- look ---------- */
+const FURS = [
+  {name:'ginger', body:'#E8954A', chest:'#F8D9B0', line:'#A65D22'},
+  {name:'gray',   body:'#9DA6B0', chest:'#E5E9ED', line:'#5C6570'},
+  {name:'brown',  body:'#8C6B4E', chest:'#DDC6AA', line:'#4F3A29'},
+  {name:'black and white', body:'#3B3A40', chest:'#F4F4F4', line:'#1C1B20'},
+  {name:'cream',  body:'#E9D7B5', chest:'#FFF8EA', line:'#A38A60'}
+];
+const PAINTS = [
+  {name:'red',    c:'#E5484D'},
+  {name:'blue',   c:'#2F7BF5'},
+  {name:'green',  c:'#1FA35A'},
+  {name:'purple', c:'#9B5DE5'}
+];
+const PCOL = ['var(--p1)','var(--p2)','var(--p3)','var(--p4)'];
+
+const STAR = c => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17.1l-5.9 3.2 1.3-6.5L2.5 9.3l6.6-.8z" fill="${c||'#F5B82E'}" stroke="#D99A12" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+const HEART = c => `<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C1 8.6 3 5 6.5 5c2 0 3.6 1.2 5.5 3.3C13.9 6.2 15.5 5 17.5 5 21 5 23 8.6 21.6 11.8 19.5 16.4 12 21 12 21z" fill="${c}"/></svg>`;
+const SPEAKER = on => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#C8641C"/>${on
+  ? '<path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" stroke="#C8641C" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
+  : '<path d="M16 9l5 6M21 9l-5 6" stroke="#C8641C" stroke-width="2.2" stroke-linecap="round"/>'}</svg>`;
+
+function catSVG(cat){
+  const f = cat.fur, p = PAINTS[cat.paint].c, s = cat.big ? 1 : 0.62;
+  return `<svg viewBox="0 0 120 126" aria-hidden="true"><g transform="translate(60 124) scale(${s}) translate(-60 -124)">
+    <path d="M84 104 Q114 100 107 62" stroke="${f.line}" stroke-width="22" fill="none" stroke-linecap="round"/>
+    <path d="M84 104 Q114 100 107 62" stroke="${f.body}" stroke-width="17" fill="none" stroke-linecap="round"/>
+    <circle cx="107" cy="60" r="6" fill="${f.chest}"/>
+    <ellipse cx="60" cy="94" rx="31" ry="26" fill="${f.body}" stroke="${f.line}" stroke-width="2.2"/>
+    <path d="M44 78 Q60 112 76 78 Q68 70 60 72 Q52 70 44 78Z" fill="${f.chest}"/>
+    <polygon points="38,42 41,11 58,31" fill="${f.body}" stroke="${f.line}" stroke-width="2.2" stroke-linejoin="round"/>
+    <polygon points="82,42 79,11 62,31" fill="${f.body}" stroke="${f.line}" stroke-width="2.2" stroke-linejoin="round"/>
+    <polygon points="42,35 43,19 53,31" fill="#F4A7B0"/>
+    <polygon points="78,35 77,19 67,31" fill="#F4A7B0"/>
+    <path d="M41 11 L38 1 M41 11 L45 2 M79 11 L82 1 M79 11 L75 2" stroke="${f.line}" stroke-width="3" stroke-linecap="round"/>
+    <polygon points="39,50 28,64 42,64" fill="${f.body}" stroke="${f.line}" stroke-width="2" stroke-linejoin="round"/>
+    <polygon points="81,50 92,64 78,64" fill="${f.body}" stroke="${f.line}" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="60" cy="50" r="23" fill="${f.body}" stroke="${f.line}" stroke-width="2.2"/>
+    <path d="M55 31 L56 38 M60 29 L60 37 M65 31 L64 38" stroke="${f.line}" stroke-width="2.2" stroke-linecap="round" opacity=".55"/>
+    <ellipse cx="60" cy="61" rx="11" ry="7.5" fill="${f.chest}"/>
+    <ellipse cx="50.5" cy="48" rx="5.2" ry="5.8" fill="#F2D35B"/>
+    <ellipse cx="69.5" cy="48" rx="5.2" ry="5.8" fill="#F2D35B"/>
+    <ellipse cx="50.5" cy="48.5" rx="2.4" ry="4.6" fill="#2A2A2E"/>
+    <ellipse cx="69.5" cy="48.5" rx="2.4" ry="4.6" fill="#2A2A2E"/>
+    <circle cx="51.6" cy="46.3" r="1.3" fill="#fff"/><circle cx="70.6" cy="46.3" r="1.3" fill="#fff"/>
+    <path d="M57 57 L63 57 L60 60.5Z" fill="#E8828F"/>
+    <path d="M60 60.5 Q57.5 64 55 62.5 M60 60.5 Q62.5 64 65 62.5" stroke="#5A4034" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M50 61 L33 58 M50 63 L34 65 M70 61 L87 58 M70 63 L86 65" stroke="#6B5A50" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+    <ellipse cx="47" cy="117" rx="11" ry="6.5" fill="${p}" stroke="${f.line}" stroke-width="2"/>
+    <ellipse cx="73" cy="117" rx="11" ry="6.5" fill="${p}" stroke="${f.line}" stroke-width="2"/>
+    <ellipse cx="44" cy="115" rx="4" ry="1.8" fill="#fff" opacity=".4"/>
+    <ellipse cx="70" cy="115" rx="4" ry="1.8" fill="#fff" opacity=".4"/>
+  </g></svg>`;
+}
+
+function pawPrint(x,y,sc,rot,color,delay){
+  return `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${sc})"><g class="print" style="animation-delay:${delay}ms" fill="${color}">
+    <ellipse cx="0" cy="5" rx="8.5" ry="7"/><ellipse cx="-9" cy="-4.5" rx="3.3" ry="4"/>
+    <ellipse cx="-3.2" cy="-10" rx="3.3" ry="4"/><ellipse cx="3.2" cy="-10" rx="3.3" ry="4"/>
+    <ellipse cx="9" cy="-4.5" rx="3.3" ry="4"/></g></g>`;
+}
+
+function floorSVG(r){
+  const col = PAINTS[r.print.paint].c, sc = r.print.big ? 1.55 : 0.8;
+  let planks = '';
+  [34,68,102,136].forEach((y,i)=>{
+    planks += `<line x1="0" x2="360" y1="${y}" y2="${y}" stroke="#D6AC75" stroke-width="2"/>`;
+    const off = (i%2)*60;
+    for(let x=90+off; x<360; x+=120) planks += `<line x1="${x}" x2="${x}" y1="${y-34}" y2="${y}" stroke="#D6AC75" stroke-width="2"/>`;
+  });
+  let prints = '';
+  for(let k=0;k<6;k++){
+    const x = 104 + k*44, y = k%2 ? 122 : 90;
+    prints += pawPrint(x, y, sc, 90 + (k%2 ? 7 : -7), col, 200 + k*230);
+  }
+  return `<svg viewBox="0 0 360 170" role="img" aria-label="${r.print.big?'Big':'Little'} ${PAINTS[r.print.paint].name} paw prints">
+    <defs><clipPath id="clipF"><rect width="360" height="170" rx="20"/></clipPath></defs>
+    <g clip-path="url(#clipF)">
+      <rect width="360" height="170" fill="#EBC896"/>${planks}
+      <ellipse cx="62" cy="114" rx="26" ry="10" fill="${col}"/>
+      <ellipse cx="80" cy="120" rx="9" ry="4" fill="${col}"/>
+      <rect x="8" y="86" width="44" height="34" rx="6" fill="#CDD2D9" stroke="#7C838D" stroke-width="2.5"/>
+      <rect x="18" y="86" width="5" height="34" fill="#B4BAC3"/>
+      <ellipse cx="52" cy="103" rx="7" ry="17" fill="#7C838D"/>
+      <ellipse cx="52" cy="103" rx="5" ry="14" fill="${col}"/>
+      ${prints}
+    </g></svg>`;
+}
+
+function heroSVG(){
+  const c = {fur:FURS[0], paint:1, big:true};
+  const k = {fur:FURS[1], paint:0, big:false};
+  return `<svg viewBox="0 0 300 140" aria-hidden="true">
+    <g transform="translate(0 6)">${catSVG(c).replace('<svg viewBox="0 0 120 126" aria-hidden="true">','<svg x="10" y="0" width="130" height="134" viewBox="0 0 120 126">')}</g>
+    ${catSVG(k).replace('<svg viewBox="0 0 120 126" aria-hidden="true">','<svg x="200" y="10" width="100" height="126" viewBox="0 0 120 126">')}
+    ${pawPrint(150,110,0.9,70,'#2F7BF5',0)}${pawPrint(178,92,0.9,50,'#2F7BF5',0)}
+  </svg>`;
+}
+
+/* ---------- sound ---------- */
+let audio = null;
+function tone(freq, start, dur, type){
+  if(!S.sound) return;
+  try{
+    if(!audio) audio = new (window.AudioContext||window.webkitAudioContext)();
+    const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + start;
+    o.type = type||'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.18,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g).connect(audio.destination); o.start(t); o.stop(t+dur+0.05);
+  }catch(e){}
+}
+const chime = () => { tone(523,0,.25); tone(659,.12,.25); tone(784,.24,.4); };
+const boop  = () => { tone(330,0,.18,'triangle'); tone(262,.14,.25,'triangle'); };
+function say(text){
+  if(!S.sound) return;
+  try{
+    const ss = window.speechSynthesis; if(!ss) return;
+    ss.cancel(); const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.92; u.pitch = 1.15; ss.speak(u);
+  }catch(e){}
+}
+
+/* ---------- game ---------- */
+const S = {players:1, scores:[], rounds:[], idx:0, firstTry:true, lock:false, sound:true};
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+// Each round is built from its answer, then checked: exactly one cat matches the prints.
+function makeRound(type){
+  const furs = shuffle(FURS).slice(0,3), pi = shuffle([0,1,2,3]);
+  let cats;
+  if(type==='A'){        // color only: all big, three different paint colors
+    cats = [{paint:pi[0],big:true},{paint:pi[1],big:true},{paint:pi[2],big:true}];
+  } else if(type==='B'){ // size only: same paint, the answer is the only one of its size
+    const b = Math.random()<.5;
+    cats = [{paint:pi[0],big:b},{paint:pi[0],big:!b},{paint:pi[0],big:!b}];
+  } else {               // color and size
+    const b = Math.random()<.5;
+    cats = [{paint:pi[0],big:b},{paint:pi[0],big:!b},{paint:pi[1],big:b}];
+  }
+  cats.forEach((c,i)=>{ c.fur = furs[i]; c.answer = (i===0); });
+  const ans = cats[0];
+  if(cats.filter(c=>c.paint===ans.paint && c.big===ans.big).length !== 1) return makeRound(type);
+  return {type, cats:shuffle(cats), print:{paint:ans.paint, big:ans.big}};
+}
+
+function buildGame(){
+  const P = S.players, types = P===1 ? ['A','B','C','A','B','C'] : ['A','B','C'];
+  S.rounds = [];
+  types.forEach(t => { for(let p=0;p<P;p++) S.rounds.push(Object.assign({player:p}, makeRound(t))); });
+  S.scores = Array(P).fill(0); S.idx = 0;
+}
+
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id===id)); window.scrollTo(0,0); }
+
+const PROMPTS = {
+  A:['Look at the paint color. Who made these prints?', 'Look at the paint color. Which kitty made these paw prints?'],
+  B:['Big prints or little prints? Who made them?', 'Are these paw prints big or little? Which kitty made them?'],
+  C:['Look at the color and the size. Who made them?', 'Look at the color, and the size. Which kitty made these paw prints?']
+};
+
+function nextRound(){
+  if(S.idx >= S.rounds.length){ endGame(); return; }
+  if(S.players > 1){
+    const p = S.rounds[S.idx].player;
+    $('passNum').textContent = p+1; $('passNum').style.background = PCOL[p];
+    $('passText').textContent = `Player ${p+1}'s turn!`;
+    show('pass'); say(`Player ${p+1}, it's your turn!`);
+  } else startRound();
+}
+
+function renderScores(bumpP){
+  const r = S.rounds[S.idx], cur = r ? r.player : -1;
+  $('scores').innerHTML = S.scores.map((s,p)=>`<div class="chip ${p===cur?'now':''} ${p===bumpP?'bump':''}" style="border-color:${p===cur?PCOL[p]:'transparent'}">
+    ${S.players>1?`<span class="dot" style="background:${PCOL[p]}">${p+1}</span>`:''}${STAR()}<span>${s}</span></div>`).join('');
+}
+
+function renderProgress(){
+  const r = S.rounds[S.idx];
+  const mine = S.rounds.map((x,i)=>({x,i})).filter(o=>o.x.player===r.player);
+  $('progress').innerHTML = mine.map(o=>`<i class="${o.i<S.idx?'done':o.i===S.idx?'cur':''}"></i>`).join('');
+}
+
+function startRound(){
+  const r = S.rounds[S.idx];
+  S.firstTry = true; S.lock = false;
+  renderScores(); renderProgress();
+  $('promptText').textContent = PROMPTS[r.type][0];
+  $('floor').innerHTML = floorSVG(r);
+  $('cats').innerHTML = r.cats.map((c,i)=>`<button class="cat" data-i="${i}" aria-label="${catName(c)} with ${PAINTS[c.paint].name} paws">${catSVG(c)}</button>`).join('');
+  $('msg').textContent = ''; $('msg').className = 'msg';
+  show('play');
+  say(PROMPTS[r.type][1]);
+}
+
+function catName(c){ return `the ${c.fur.name} ${c.big?'cat':'kitten'}`; }
+
+function tapCat(btn){
+  if(S.lock || btn.disabled) return;
+  const r = S.rounds[S.idx], c = r.cats[+btn.dataset.i];
+  if(c.answer){
+    S.lock = true;
+    const earned = S.firstTry;
+    if(earned) S.scores[r.player]++;
+    btn.classList.add('yes'); chime(); hearts(btn);
+    renderScores(earned ? r.player : -1);
+    const line = earned ? 'Yes! You found the painter!' : 'Yes! You found it!';
+    $('msg').textContent = line; $('msg').className = 'msg good';
+    say(`${line} It was ${catName(c)} with ${PAINTS[c.paint].name} paws!`);
+    setTimeout(()=>{ S.idx++; nextRound(); }, 2600);
+  } else {
+    S.firstTry = false;
+    btn.classList.add('nope'); btn.disabled = true; boop();
+    let why;
+    if(c.paint !== r.print.paint) why = `My paws are ${PAINTS[c.paint].name}.`;
+    else why = c.big ? 'My paws are too big.' : 'My paws are too little.';
+    const b = document.createElement('span'); b.className = 'bubble'; b.textContent = 'Not me!'; btn.appendChild(b);
+    $('msg').textContent = 'Not that kitty. Try again!'; $('msg').className = 'msg try';
+    say(`Not me! ${why} Try again!`);
+  }
+}
+
+function hearts(btn){
+  const rect = btn.getBoundingClientRect(), app = $('app').getBoundingClientRect();
+  const cols = ['#F27C6B','#F5B82E','#3DB5A6','#9C7BE0','#F08A3C'];
+  for(let i=0;i<9;i++){
+    const h = document.createElement('div'); h.className = 'heart';
+    h.innerHTML = i%3===0 ? STAR() : HEART(cols[i%cols.length]);
+    h.style.left = (rect.left - app.left + rect.width*(0.1 + 0.8*Math.random()) - 13) + 'px';
+    h.style.top  = (rect.top - app.top + rect.height*0.4) + 'px';
+    h.style.animationDelay = (i*70) + 'ms';
+    $('app').appendChild(h); setTimeout(()=>h.remove(), 2200);
+  }
+}
+
+function endGame(){
+  const max = Math.max(...S.scores), winners = S.scores.map((s,p)=>s===max?p:-1).filter(p=>p>=0);
+  let text;
+  if(S.players===1) text = `You got ${max} ${max===1?'star':'stars'}!`;
+  else if(winners.length===1) text = `Player ${winners[0]+1} wins!`;
+  else text = "It's a tie! Everyone wins!";
+  $('winner').textContent = text;
+  $('results').innerHTML = S.scores.map((s,p)=>`<div class="row ${S.players>1 && winners.includes(p) && winners.length===1 ? 'win':''}">
+    <span class="dot" style="background:${PCOL[p]}">${p+1}</span><span class="name">Player ${p+1}</span>
+    <span class="stars">${s ? Array(s).fill(STAR()).join('') : STAR('#EBD3BC')}</span><b style="font-size:22px">${s}</b></div>`).join('');
+  show('end'); chime(); say(`Great detective work! ${text}`);
+}
+
+/* ---------- wire up ---------- */
+$('hero').innerHTML = heroSVG();
+$('pcount').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  S.players = +b.dataset.n;
+  $('pcount').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+});
+function setSound(){ $('soundBtn').innerHTML = SPEAKER(S.sound); }
+$('soundBtn').addEventListener('click', ()=>{ S.sound = !S.sound; if(!S.sound){ try{speechSynthesis.cancel();}catch(e){} } setSound(); });
+$('sayBtn').innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#C8641C"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" stroke="#C8641C" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>`;
+$('sayBtn').addEventListener('click', ()=>{ const r = S.rounds[S.idx]; if(r){ const was=S.sound; S.sound=true; say(PROMPTS[r.type][1]); S.sound=was; } });
+setSound();
+$('startBtn').addEventListener('click', ()=>{ buildGame(); nextRound(); });
+$('readyBtn').addEventListener('click', startRound);
+$('cats').addEventListener('click', e=>{ const b = e.target.closest('.cat'); if(b) tapCat(b); });
+$('againBtn').addEventListener('click', ()=>{ buildGame(); nextRound(); });
+$('homeBtn').addEventListener('click', ()=>show('start'));
+
+// self-check for testing: every round has exactly one matching cat
+window.__check = () => S.rounds.every(r => r.cats.filter(c=>c.paint===r.print.paint && c.big===r.print.big).length===1 && r.cats.filter(c=>c.answer).length===1);
+})();
+</script>
+</body>
+</html>
